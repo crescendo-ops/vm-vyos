@@ -1,0 +1,83 @@
+name: Publish Beta Pre-Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: prerelease-beta-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  prerelease:
+    if: ${{ !contains(github.event.head_commit.message, 'chore(main): release') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build cloud-init image
+        env:
+          OUT_DIR: ${{ github.workspace }}/out
+        run: ./images/vyos-router/build.sh
+
+      - name: Prepare beta tag metadata
+        id: beta
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+
+          release_pr_title="$(
+            gh pr list \
+              --repo "${GITHUB_REPOSITORY}" \
+              --base main \
+              --state open \
+              --search "in:title chore(main): release" \
+              --json title \
+              --jq 'map(select(.title | test("^chore\\(main\\): release [0-9]+\\.[0-9]+\\.[0-9]+$"))) | first.title // ""'
+          )"
+
+          if [ -n "${release_pr_title}" ]; then
+            base_version="$(echo "${release_pr_title}" | sed -E 's/^chore\(main\): release ([0-9]+\.[0-9]+\.[0-9]+)$/\1/')"
+          else
+            latest_stable_tag="$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)"
+            if [ -n "${latest_stable_tag}" ]; then
+              stable_version="${latest_stable_tag#v}"
+              IFS='.' read -r major minor patch <<< "${stable_version}"
+              base_version="${major}.${minor}.$((patch + 1))"
+            else
+              base_version="0.1.0"
+            fi
+          fi
+
+          previous_beta="$(
+            git tag -l "v${base_version}-beta.*" \
+              | sed -En "s/^v${base_version}-beta\\.([0-9]+)$/\\1/p" \
+              | sort -n \
+              | tail -n1
+          )"
+          next_beta="${previous_beta:-0}"
+          next_beta="$((next_beta + 1))"
+
+          tag="v${base_version}-beta.${next_beta}"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "name=${tag}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish prerelease
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.beta.outputs.tag }}
+          name: ${{ steps.beta.outputs.name }}
+          prerelease: true
+          make_latest: false
+          generate_release_notes: true
+          files: |
+            out/**

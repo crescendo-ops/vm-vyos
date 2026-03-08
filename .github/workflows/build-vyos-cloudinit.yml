@@ -19,28 +19,31 @@ on:
         description: "Container /work tmpfs size"
         required: false
         default: "10g"
+  pull_request:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 360
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Build cloud-init image
         env:
-          DOCKER_IMAGE: ${{ inputs.docker_image }}
-          TMPFS_SIZE: ${{ inputs.tmpfs_size }}
-          BUILD_BY: ${{ inputs.build_by }}
-          VYOS_GIT_REF: ${{ inputs.vyos_git_ref }}
+          DOCKER_IMAGE: ${{ github.event.inputs.docker_image || 'vyos/vyos-build:current' }}
+          TMPFS_SIZE: ${{ github.event.inputs.tmpfs_size || '10g' }}
+          BUILD_BY: ${{ github.event.inputs.build_by || 'quentin-roche' }}
+          VYOS_GIT_REF: ${{ github.event.inputs.vyos_git_ref || '' }}
           OUT_DIR: ${{ github.workspace }}/out
         run: ./images/vyos-router/build.sh
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: vyos-cloudinit-${{ github.run_id }}
+          name: vyos-cloudinit-${{ github.sha }}
           path: out/**
           if-no-files-found: error
           retention-days: 14
