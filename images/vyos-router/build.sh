@@ -42,6 +42,9 @@ export MKSQUASHFS_OPTIONS="-no-xattrs -processors $(nproc)"
 
 find build -type f \( -name "*.qcow2" -o -name "*.iso" -o -name "*.log" \) -exec cp --parents {} /out/ \;
 find /out -type f \( -name "*.qcow2" -o -name "*.iso" -o -name "*.log" \) -print0 | sort -z | xargs -0 sha256sum > /out/SHA256SUMS
+
+# Ensure GitHub runner can read archived files from the bind-mounted output dir.
+chmod -R a+rX /out
 CONTAINER_SCRIPT
 
 echo "Artifacts available in: ${OUT_DIR}"
