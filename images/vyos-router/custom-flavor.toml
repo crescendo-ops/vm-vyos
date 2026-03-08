@@ -1,0 +1,22 @@
+name = "cloud-init"
+description = "VyOS for virtualization with cloud-init (NoCloud) pre-enabled"
+archs = ["amd64"]
+image_format = "qcow2"
+image_formats = ["qcow2"]
+packages = ["cloud-init", "qemu-guest-agent"]
+
+[[includes_chroot]]
+path = "/etc/cloud/cloud.cfg.d/99-vyos-nocloud.cfg"
+data = """
+datasource_list: [ NoCloud ]
+network:
+  config: disabled
+"""
+
+[[includes_chroot]]
+path = "../hooks/live/90-cloud-init.chroot"
+data = """#!/bin/sh
+set -e
+dpkg-reconfigure -f noninteractive cloud-init
+cloud-init clean
+"""
