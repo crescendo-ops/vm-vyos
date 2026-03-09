@@ -1,0 +1,33 @@
+name: VyOS CI
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Check Terraform formatting
+        run: terraform -chdir=terraform/vyos-router fmt -check -recursive
+
+      - name: Validate Terraform configuration
+        run: |
+          terraform -chdir=terraform/vyos-router init -backend=false
+          terraform -chdir=terraform/vyos-router validate
+
+      - name: Validate build script syntax
+        run: bash -n images/vyos-router/build.sh
