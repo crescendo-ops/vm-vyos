@@ -34,3 +34,5 @@ override.tf.json
 # Build artifacts
 .artifacts/
 **/.artifacts/
+out/
+images/vyos-router/artifacts/
