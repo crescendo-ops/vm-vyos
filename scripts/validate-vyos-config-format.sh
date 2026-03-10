@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-CONFIG_FILE="${1:-${REPO_ROOT}/config/vyos-config.boot}"
+CONFIG_FILE="${1:-${REPO_ROOT}/config/config.boot}"
 PACKAGE_FILE="${REPO_ROOT}/config/vyos-1x-package.toml"
 
 if [[ ! -f "${CONFIG_FILE}" ]]; then
