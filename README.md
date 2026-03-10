@@ -51,7 +51,7 @@ Generated outputs include:
 
 - PR checks (Terraform fmt/validate + Bash syntax): `.github/workflows/vyos-ci.yml`
 - PR title semantic validation for release automation: `.github/workflows/release-pr-title-lint.yml`
-- Weekly automated VyOS pin updates with compare-based PR body: `.github/workflows/vyos-weekly-upgrade.yml`
+- Weekly automated VyOS pin updates with compare-based PR body: `.github/workflows/bump-vyos-commit-pin.yml`
 - Stable release automation on `main`: `.github/workflows/release-please.yml`
 - Beta prerelease publish (manual): `.github/workflows/release-publish-beta.yml`
 - Build and upload VyOS release assets (manual, stable + beta, includes artifact build): `.github/workflows/release-publish-assets.yml`

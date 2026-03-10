@@ -1,4 +1,4 @@
-name: VyOS Weekly Upgrade
+name: Bump VyOS Commit Pin
 
 on:
   schedule:
@@ -10,7 +10,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: vyos-weekly-upgrade
+  group: bump-vyos-commit-pin
   cancel-in-progress: true
 
 jobs:
