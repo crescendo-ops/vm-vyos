@@ -6,10 +6,12 @@
 
 ## Pull Request Naming
 - PR titles must follow semantic commit style: `<type>(<scope>): <description>`.
+- Scope must reference a concrete subsystem (for example: `os-image`, `release-assets`, `ci`, `terraform`), not the repository name.
 - Allowed types include: `fix`, `feat`, `deps`, `chore`, `docs`, `refactor`, `test`, `ci`, `build`, `perf`.
 
 ## Commit Subject Naming
 - Commit subjects must follow semantic commit style with mandatory scope: `<type>(<scope>): <description>`.
+- Scope must reference a concrete subsystem (for example: `os-image`, `release-assets`, `ci`, `terraform`), not the repository name.
 - Optional breaking marker is allowed: `<type>(<scope>)!: <description>`.
 - Allowed types include: `fix`, `feat`, `deps`, `chore`, `docs`, `refactor`, `test`, `ci`, `build`, `perf`.
 
