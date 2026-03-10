@@ -69,6 +69,50 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
+      - name: Build upload file list
+        id: release-files
+        run: |
+          set -euo pipefail
+
+          artifacts_dir="images/vyos-router/artifacts"
+          declare -A selected_by_name=()
+          selected_paths=()
+
+          while IFS= read -r -d '' file; do
+            if [ ! -r "${file}" ]; then
+              sudo chmod a+r "${file}" || true
+            fi
+
+            if [ ! -r "${file}" ]; then
+              echo "::warning::Skipping unreadable artifact: ${file}"
+              continue
+            fi
+
+            asset_name="$(basename "${file}")"
+            if [ -n "${selected_by_name["${asset_name}"]+x}" ]; then
+              echo "::warning::Skipping duplicate asset name '${asset_name}' from ${file}; already selected ${selected_by_name["${asset_name}"]}"
+              continue
+            fi
+
+            selected_by_name["${asset_name}"]="${file}"
+            selected_paths+=("${file}")
+          done < <(
+            find "${artifacts_dir}" -type f \
+              \( -name "*.iso" -o -name "*.qcow2" -o -name "*.log" -o -name "SHA256SUMS" \) \
+              -print0 | sort -z
+          )
+
+          if [ "${#selected_paths[@]}" -eq 0 ]; then
+            echo "No uploadable release assets found in ${artifacts_dir}" >&2
+            exit 1
+          fi
+
+          {
+            echo "files<<EOF"
+            printf '%s\n' "${selected_paths[@]}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
         with:
@@ -76,8 +120,4 @@ jobs:
           name: ${{ steps.release-meta.outputs.name }}
           body: ${{ steps.release-meta.outputs.body }}
           prerelease: ${{ steps.release-meta.outputs.prerelease }}
-          files: |
-            images/vyos-router/artifacts/**/*.iso
-            images/vyos-router/artifacts/**/*.qcow2
-            images/vyos-router/artifacts/**/*.log
-            images/vyos-router/artifacts/SHA256SUMS
+          files: ${{ steps.release-files.outputs.files }}
