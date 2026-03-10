@@ -46,29 +46,9 @@ Generated outputs include:
 
 ## Deploy VyOS on libvirt with ZFS ZVOL
 
-Use the Ansible playbook:
-
-```bash
-ansible-playbook -i "192.168.1.124," -u root ansible/redeploy-vyos-vm.yml
-```
-
-Default hardcoded paths in the playbook:
-
-- ZVOL dataset: `zroot/vm-disks/vyos-router/disk`
-- ZVOL device: `/dev/zvol/zroot/vm-disks/vyos-router/disk`
-- Local XML on your Mac: `config/vm-domain.xml`
-- Remote XML on libvirt host: `/tmp/vm-domain.xml`
-- Local qcow2 on your Mac: `vyos-beta-v0.0.1-5-custom-flavor-amd64.qcow2`
-- Remote qcow2 on libvirt host: `/var/lib/libvirt/images/vyos-router.qcow2`
-
-Behavior:
-
-- Always replaces existing VM + ZVOL with a brand new instance.
-- Copies the XML from your Mac to the libvirt host.
-- Copies the qcow2 from your Mac to the libvirt host.
-- Imports the `qcow2` image into the newly created ZVOL.
-- Defines the VM from the copied XML.
-- Enables autostart and starts the VM.
+`ansible/redeploy-vyos-vm.yml` handles VM redeploy on a libvirt host using a ZFS ZVOL root disk.
+It replaces any existing VM/disk, imports the selected qcow2 image, defines the domain from
+`config/vm-domain.xml`, and starts the guest.
 
 ## Commit and PR Title Convention
 
