@@ -69,47 +69,34 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Build upload file list
+      - name: Prepare release assets
         id: release-files
+        shell: bash
+        env:
+          TAG_NAME: ${{ steps.release-meta.outputs.tag }}
         run: |
           set -euo pipefail
 
           artifacts_dir="images/vyos-router/artifacts"
-          declare -A selected_by_name=()
-          selected_paths=()
+          release_version="$(printf '%s' "${TAG_NAME#v}" | tr -c 'A-Za-z0-9._-' '-')"
 
-          while IFS= read -r -d '' file; do
-            if [ ! -r "${file}" ]; then
-              sudo chmod a+r "${file}" || true
-            fi
+          iso_src="$(find "${artifacts_dir}" -type f -name 'vyos-*.iso' | sort | head -n 1)"
+          qcow2_src="$(find "${artifacts_dir}" -type f -name 'vyos-*.qcow2' | sort | head -n 1)"
 
-            if [ ! -r "${file}" ]; then
-              echo "::warning::Skipping unreadable artifact: ${file}"
-              continue
-            fi
-
-            asset_name="$(basename "${file}")"
-            if [ -n "${selected_by_name["${asset_name}"]+x}" ]; then
-              echo "::warning::Skipping duplicate asset name '${asset_name}' from ${file}; already selected ${selected_by_name["${asset_name}"]}"
-              continue
-            fi
-
-            selected_by_name["${asset_name}"]="${file}"
-            selected_paths+=("${file}")
-          done < <(
-            find "${artifacts_dir}" -type f \
-              \( -name "*.iso" -o -name "*.qcow2" -o -name "*.log" -o -name "SHA256SUMS" \) \
-              -print0 | sort -z
-          )
-
-          if [ "${#selected_paths[@]}" -eq 0 ]; then
-            echo "No uploadable release assets found in ${artifacts_dir}" >&2
+          if [ -z "${iso_src}" ] || [ -z "${qcow2_src}" ]; then
+            echo "Missing vyos ISO or QCOW2 artifact in ${artifacts_dir}" >&2
             exit 1
           fi
 
+          iso_out="${artifacts_dir}/vyos-${release_version}-custom-flavor-amd64.iso"
+          qcow2_out="${artifacts_dir}/vyos-${release_version}-custom-flavor-amd64.qcow2"
+          mv "${iso_src}" "${iso_out}"
+          mv "${qcow2_src}" "${qcow2_out}"
+
           {
             echo "files<<EOF"
-            printf '%s\n' "${selected_paths[@]}"
+            echo "${iso_out}"
+            echo "${qcow2_out}"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
