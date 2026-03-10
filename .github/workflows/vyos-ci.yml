@@ -31,3 +31,6 @@ jobs:
 
       - name: Validate build script syntax
         run: bash -n os-image/build.sh
+
+      - name: Validate VyOS config format
+        run: scripts/validate-vyos-config-format.sh
