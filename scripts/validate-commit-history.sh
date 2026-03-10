@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-pattern='^(feat|fix|chore|docs|refactor|test|ci|build|perf)\([[:alnum:]_.\/-]+\)(!)?: .+'
+pattern='^(feat|fix|perf|deps|revert|docs|style|chore|refactor|test|build|ci)\([[:alnum:]_.\/-]+\)(!)?: .+'
 range="${1:-HEAD}"
 
 echo "Checking commit subjects in range: ${range}"
