@@ -1,4 +1,4 @@
-name: VyOS Weekly Upgrade
+name: Bump VyOS Commit Pin
 
 on:
   schedule:
@@ -10,7 +10,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: vyos-weekly-upgrade
+  group: bump-vyos-commit-pin
   cancel-in-progress: true
 
 jobs:
@@ -30,10 +30,10 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ github.token }}
-          commit-message: deps(vyos): bump vyos-1x to ${{ steps.prepare.outputs.new_sha_short }}
+          commit-message: "deps(vyos): bump vyos-1x to ${{ steps.prepare.outputs.new_sha_short }}"
           branch: deps/auto-bump-vyos-1x
           delete-branch: true
-          title: deps(vyos): 🤖 bump vyos-1x to ${{ steps.prepare.outputs.new_sha_short }}
+          title: "deps(vyos): 🤖 bump vyos-1x to ${{ steps.prepare.outputs.new_sha_short }}"
           body-path: /tmp/vyos-upgrade-pr.md
           add-paths: |
             os-image/vyos-1x-package.toml
