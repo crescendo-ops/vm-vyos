@@ -6,8 +6,8 @@ Build automation and Terraform for the VyOS router image and VM.
 
 - `os-image/build.sh`: builds VyOS artifacts (`.iso`, `.qcow2`, `.log`, `SHA256SUMS`)
 - `os-image/custom-flavor.toml`: VyOS flavor definition used by the build script
-- `os-image/vyos-1x-package.toml`: pinned `vyos-1x` package source/version used by builds
-- `vyos-config.boot`: VyOS config baked into image builds
+- `config/vyos-1x-package.toml`: pinned `vyos-1x` package source/version used by builds
+- `config/config.boot`: VyOS config baked into image builds
 - `terraform/vyos-router`: VM provisioning files
 - `scripts/validate-commit-history.sh`: validates scoped conventional commit subjects
 
@@ -19,13 +19,13 @@ From repository root:
 OUT_DIR="$PWD/os-image/artifacts" ./os-image/build.sh
 ```
 
-The build script appends `vyos-config.boot` as `default_config` in the flavor before running `build-vyos-image`.
+The build script appends `config/config.boot` as `default_config` in the flavor before running `build-vyos-image`.
 Set `DEFAULT_CONFIG_FILE=/absolute/path/to/config.boot` to override the config source file.
 
 Version pinning is tracked in-repo via:
 
 ```bash
-os-image/vyos-1x-package.toml
+config/vyos-1x-package.toml
 ```
 
 Example:
@@ -43,6 +43,12 @@ Generated outputs include:
 - `os-image/artifacts/**/*.qcow2`
 - `os-image/artifacts/**/*.log`
 - `os-image/artifacts/SHA256SUMS`
+
+## Deploy VyOS on libvirt with ZFS ZVOL
+
+`ansible/redeploy-vyos-vm.yml` handles VM redeploy on a libvirt host using a ZFS ZVOL root disk.
+It replaces any existing VM/disk, imports the selected qcow2 image, defines the domain from
+`config/vm-domain.xml`, and starts the guest.
 
 ## Commit and PR Title Convention
 

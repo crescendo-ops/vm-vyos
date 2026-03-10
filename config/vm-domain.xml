@@ -1,0 +1,50 @@
+<domain type='kvm'>
+  <name>vyos-router</name>
+  <memory unit='MiB'>4096</memory>
+  <vcpu placement='static'>2</vcpu>
+  <cpu mode='host-passthrough' check='none'/>
+  <os>
+    <type arch='x86_64' machine='q35'>hvm</type>
+    <boot dev='hd'/>
+  </os>
+  <features>
+    <acpi/>
+    <apic/>
+  </features>
+  <clock offset='utc'/>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>restart</on_crash>
+  <devices>
+    <!-- ZFS ZVOL-backed VyOS root disk -->
+    <disk type='block' device='disk'>
+      <driver name='qemu' type='raw' cache='none' io='native'/>
+      <source dev='/dev/zvol/zroot/vm-disks/vyos-router/disk'/>
+      <target dev='vda' bus='virtio'/>
+    </disk>
+
+    <!-- Management network -->
+    <interface type='bridge'>
+      <source bridge='brMgmt'/>
+      <model type='virtio'/>
+    </interface>
+
+    <!-- Data-plane network -->
+    <interface type='bridge'>
+      <source bridge='brVyos'/>
+      <model type='virtio'/>
+    </interface>
+
+    <serial type='pty'>
+      <target port='0'/>
+    </serial>
+    <console type='pty'>
+      <target type='serial' port='0'/>
+    </console>
+
+    <!-- qemu-guest-agent channel -->
+    <channel type='unix'>
+      <target type='virtio' name='org.qemu.guest_agent.0'/>
+    </channel>
+  </devices>
+</domain>

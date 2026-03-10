@@ -29,8 +29,16 @@ jobs:
           terraform -chdir=terraform/vyos-router init -backend=false
           terraform -chdir=terraform/vyos-router validate
 
+      - name: Install Ansible
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible
+
       - name: Validate build script syntax
         run: bash -n os-image/build.sh
 
       - name: Validate VyOS config format
         run: scripts/validate-vyos-config-format.sh
+
+      - name: Validate Ansible playbook syntax
+        run: ansible-playbook -i "localhost," --syntax-check ansible/redeploy-vyos-vm.yml
