@@ -60,22 +60,18 @@ jobs:
           artifacts_dir="os-image/artifacts"
           release_version="$(printf '%s' "${TAG_NAME#v}" | tr -c 'A-Za-z0-9._-' '-')"
 
-          iso_src="$(find "${artifacts_dir}" -type f -name 'vyos-*.iso' | sort | head -n 1)"
           qcow2_src="$(find "${artifacts_dir}" -type f -name 'vyos-*.qcow2' | sort | head -n 1)"
 
-          if [ -z "${iso_src}" ] || [ -z "${qcow2_src}" ]; then
-            echo "Missing vyos ISO or QCOW2 artifact in ${artifacts_dir}" >&2
+          if [ -z "${qcow2_src}" ]; then
+            echo "Missing vyos QCOW2 artifact in ${artifacts_dir}" >&2
             exit 1
           fi
 
-          iso_out="${artifacts_dir}/vyos-${release_version}-custom-flavor-amd64.iso"
           qcow2_out="${artifacts_dir}/vyos-${release_version}-custom-flavor-amd64.qcow2"
-          mv "${iso_src}" "${iso_out}"
           mv "${qcow2_src}" "${qcow2_out}"
 
           {
             echo "files<<EOF"
-            echo "${iso_out}"
             echo "${qcow2_out}"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"

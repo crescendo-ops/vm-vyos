@@ -2,10 +2,17 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 FLAVOR_FILE="${SCRIPT_DIR}/custom-flavor.toml"
 VYOS_1X_PACKAGE_FILE="${SCRIPT_DIR}/vyos-1x-package.toml"
+DEFAULT_CONFIG_FILE="${DEFAULT_CONFIG_FILE:-${REPO_ROOT}/vyos-config.boot}"
 
 OUT_DIR="${OUT_DIR:-$PWD/out}"
+
+if [[ ! -f "${DEFAULT_CONFIG_FILE}" ]]; then
+  echo "Missing VyOS config file: ${DEFAULT_CONFIG_FILE}" >&2
+  exit 1
+fi
 
 mkdir -p "${OUT_DIR}"
 
@@ -15,6 +22,7 @@ docker run --rm -i --privileged \
   -v "${OUT_DIR}:/out" \
   -v "${FLAVOR_FILE}:/custom-flavor.toml:ro" \
   -v "${VYOS_1X_PACKAGE_FILE}:/vyos-1x-package.toml:ro" \
+  -v "${DEFAULT_CONFIG_FILE}:/vyos-config.boot:ro" \
   "vyos/vyos-build:current" \
   bash -s <<'CONTAINER_SCRIPT'
 set -euo pipefail
@@ -26,7 +34,14 @@ git clone https://github.com/vyos/vyos-build .
 cp /vyos-1x-package.toml scripts/package-build/vyos-1x/package.toml
 
 mkdir -p data/build-flavors
-cp /custom-flavor.toml "data/build-flavors/custom-flavor.toml"
+FLAVOR_DEST="data/build-flavors/custom-flavor.toml"
+{
+  echo "default_config = '''"
+  cat /vyos-config.boot
+  echo "'''"
+  echo
+  cat /custom-flavor.toml
+} > "${FLAVOR_DEST}"
 
 export LB_SQUASHFS_OPTIONS="-no-xattrs -processors $(nproc)"
 export MKSQUASHFS_OPTIONS="-no-xattrs -processors $(nproc)"
