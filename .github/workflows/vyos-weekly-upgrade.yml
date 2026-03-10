@@ -1,0 +1,39 @@
+name: VyOS Weekly Upgrade
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: vyos-weekly-upgrade
+  cancel-in-progress: true
+
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare VyOS upgrade
+        id: prepare
+        run: ./scripts/prepare-vyos-upgrade.sh --body-file /tmp/vyos-upgrade-pr.md
+
+      - name: Create or update upgrade PR
+        if: steps.prepare.outputs.changed == 'true'
+        id: create-pr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ github.token }}
+          commit-message: deps(vyos): bump vyos-1x to ${{ steps.prepare.outputs.new_sha_short }}
+          branch: deps/auto-bump-vyos-1x
+          delete-branch: true
+          title: deps(vyos): 🤖 bump vyos-1x to ${{ steps.prepare.outputs.new_sha_short }}
+          body-path: /tmp/vyos-upgrade-pr.md
+          add-paths: |
+            os-image/vyos-1x-package.toml
