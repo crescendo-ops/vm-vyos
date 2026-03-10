@@ -1,0 +1,148 @@
+name: Release Publish Beta
+
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  release-publish-beta:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare and push beta tag
+        id: beta
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+        run: |
+          set -euo pipefail
+
+          base_version=""
+          target_sha=""
+          release_pr_pattern='^chore\\(main\\): release [0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$'
+          release_pr_json="$(
+            gh pr list \
+              --repo "${GITHUB_REPOSITORY}" \
+              --base main \
+              --state open \
+              --json title,headRefOid,number \
+              --jq "map(select(.title | test(\"${release_pr_pattern}\"))) | first // {}"
+          )"
+
+          release_pr_title="$(echo "${release_pr_json}" | jq -r '.title // ""')"
+          target_sha="$(echo "${release_pr_json}" | jq -r '.headRefOid // ""')"
+          release_pr_number="$(echo "${release_pr_json}" | jq -r '.number // ""')"
+
+          if [ -z "${release_pr_title}" ] || [ -z "${target_sha}" ] || [ -z "${release_pr_number}" ]; then
+            echo "Unable to determine release PR details (title, number, head commit) from an open release PR." >&2
+            exit 1
+          fi
+
+          base_version="$(echo "${release_pr_title}" | sed -E 's/^chore\(main\): release ([0-9]+\.[0-9]+\.[0-9]+)(-[0-9A-Za-z.-]+)?$/\1/')"
+
+          if [ -z "${base_version}" ]; then
+            echo "Unable to determine base version from release PR title: ${release_pr_title}" >&2
+            exit 1
+          fi
+
+          for i in $(seq 1 1000); do
+            tag="beta-v${base_version}-${i}"
+            if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${tag}" >/dev/null 2>&1; then
+              continue
+            fi
+
+            gh api \
+              --method POST \
+              "repos/${GITHUB_REPOSITORY}/git/refs" \
+              -f ref="refs/tags/${tag}" \
+              -f sha="${target_sha}" >/dev/null
+
+            echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+            echo "name=Beta ${tag}" >> "$GITHUB_OUTPUT"
+            echo "target_sha=${target_sha}" >> "$GITHUB_OUTPUT"
+            echo "release_pr_number=${release_pr_number}" >> "$GITHUB_OUTPUT"
+            exit 0
+          done
+
+          echo "No available beta suffix in range 1..1000 for base version ${base_version}." >&2
+          exit 1
+
+      - name: Prepare beta release notes
+        id: release-notes
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+          BETA_TAG: ${{ steps.beta.outputs.tag }}
+        run: |
+          set -euo pipefail
+          notes_file="${RUNNER_TEMP}/beta-release-notes.md"
+          raw_notes_file="${RUNNER_TEMP}/beta-release-notes-raw.md"
+          notes_content="$(
+            gh pr list \
+              --repo "${GITHUB_REPOSITORY}" \
+              --base main \
+              --state open \
+              --json title,body \
+              --jq 'map(select(.title | test("^chore\\(main\\): release [0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"))) | first.body // ""'
+          )"
+
+          printf '%s\n' "${notes_content}" > "${raw_notes_file}"
+
+          {
+            printf '## Beta prerelease `%s`\n\n' "${BETA_TAG}"
+            echo '> This is a beta prerelease for testing and validation.'
+            echo '> It may be unstable and should not be treated as a stable release.'
+            echo
+
+            if grep -q '[^[:space:]]' "${raw_notes_file}"; then
+              cat "${raw_notes_file}"
+            else
+              echo "No release notes generated."
+            fi
+          } > "${notes_file}"
+
+          echo "path=${notes_file}" >> "$GITHUB_OUTPUT"
+
+      - name: Verify beta tag target commit
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+          TAG_NAME: ${{ steps.beta.outputs.tag }}
+          EXPECTED_SHA: ${{ steps.beta.outputs.target_sha }}
+        run: |
+          set -euo pipefail
+          tag_sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG_NAME}" --jq '.object.sha')"
+          if [ "${tag_sha}" != "${EXPECTED_SHA}" ]; then
+            echo "Tag ${TAG_NAME} points to ${tag_sha}, expected ${EXPECTED_SHA}." >&2
+            exit 1
+          fi
+
+      - name: Publish beta prerelease
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+          tag_name: ${{ steps.beta.outputs.tag }}
+          target_commitish: ${{ steps.beta.outputs.target_sha }}
+          name: ${{ steps.beta.outputs.name }}
+          body_path: ${{ steps.release-notes.outputs.path }}
+          prerelease: true
+          make_latest: false
+
+      - name: Trigger release asset publish workflow
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+          TAG_NAME: ${{ steps.beta.outputs.tag }}
+        run: |
+          set -euo pipefail
+          gh workflow run release-publish-assets.yml --repo "${GITHUB_REPOSITORY}" --ref main -f tag_name="${TAG_NAME}"
+
+      - name: Comment release PR with beta link
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+          RELEASE_PR_NUMBER: ${{ steps.beta.outputs.release_pr_number }}
+          TAG_NAME: ${{ steps.beta.outputs.tag }}
+        run: |
+          set -euo pipefail
+          release_url="https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG_NAME}"
+          gh pr comment "${RELEASE_PR_NUMBER}" --repo "${GITHUB_REPOSITORY}" --body "Beta prerelease published: [${TAG_NAME}](${release_url})"

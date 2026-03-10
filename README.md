@@ -34,6 +34,7 @@ Generated outputs include:
 ## CI and Release
 
 - PR checks (Terraform fmt/validate + Bash syntax): `.github/workflows/vyos-ci.yml`
-- PR title semantic lint: `.github/workflows/pr-title-lint.yml`
-- Stable release automation + beta prerelease publish on `main`: `.github/workflows/release-please.yml`
-- Build and upload VyOS release assets (stable + beta/manual, includes artifact build): `.github/workflows/publish-release-assets.yml`
+- PR title semantic validation for release automation: `.github/workflows/release-pr-title-lint.yml`
+- Stable release automation on `main`: `.github/workflows/release-please.yml`
+- Beta prerelease publish (manual): `.github/workflows/release-publish-beta.yml`
+- Build and upload VyOS release assets (manual, stable + beta, includes artifact build): `.github/workflows/release-publish-assets.yml`

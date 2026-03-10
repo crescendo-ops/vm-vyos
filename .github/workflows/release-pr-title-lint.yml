@@ -1,4 +1,6 @@
-name: PR Title Lint
+name: Release PR Title Lint
+
+# Description: Enforces semantic PR titles required by release automation.
 
 on:
   pull_request_target:
@@ -12,7 +14,7 @@ permissions:
   pull-requests: read
 
 jobs:
-  lint:
+  release-pr-title-lint:
     runs-on: ubuntu-latest
     steps:
       - name: Validate PR title
