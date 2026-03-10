@@ -1,4 +1,4 @@
 [[packages]]
 name = "vyos-1x"
-commit_id = "124304285eef883069303773093ed76f6d593c16"
+commit_id = "c415e28055137f7b8ac3e302bec9465c0a798184"
 scm_url = "https://github.com/vyos/vyos-1x.git"
