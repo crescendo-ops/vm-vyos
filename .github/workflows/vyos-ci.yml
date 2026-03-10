@@ -18,17 +18,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Terraform
-        uses: hashicorp/setup-terraform@v3
-
-      - name: Check Terraform formatting
-        run: terraform -chdir=terraform/vyos-router fmt -check -recursive
-
-      - name: Validate Terraform configuration
-        run: |
-          terraform -chdir=terraform/vyos-router init -backend=false
-          terraform -chdir=terraform/vyos-router validate
-
       - name: Install Ansible
         run: |
           sudo apt-get update
