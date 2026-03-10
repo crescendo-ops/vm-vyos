@@ -30,4 +30,4 @@ jobs:
           terraform -chdir=terraform/vyos-router validate
 
       - name: Validate build script syntax
-        run: bash -n images/vyos-router/build.sh
+        run: bash -n os-image/build.sh

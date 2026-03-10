@@ -1,0 +1,4 @@
+[[packages]]
+name = "vyos-1x"
+commit_id = "124304285eef883069303773093ed76f6d593c16"
+scm_url = "https://github.com/vyos/vyos-1x.git"

@@ -4,8 +4,9 @@ Build automation and Terraform for the VyOS router image and VM.
 
 ## Repository Layout
 
-- `images/vyos-router/build.sh`: builds VyOS artifacts (`.iso`, `.qcow2`, `.log`, `SHA256SUMS`)
-- `images/vyos-router/custom-flavor.toml`: VyOS flavor definition used by the build script
+- `os-image/build.sh`: builds VyOS artifacts (`.iso`, `.qcow2`, `.log`, `SHA256SUMS`)
+- `os-image/custom-flavor.toml`: VyOS flavor definition used by the build script
+- `os-image/vyos-1x-package.toml`: pinned `vyos-1x` package source/version used by builds
 - `terraform/vyos-router`: VM provisioning files
 - `scripts/validate-commit-history.sh`: validates scoped conventional commit subjects
 
@@ -14,15 +15,30 @@ Build automation and Terraform for the VyOS router image and VM.
 From repository root:
 
 ```bash
-OUT_DIR="$PWD/images/vyos-router/artifacts" ./images/vyos-router/build.sh
+OUT_DIR="$PWD/os-image/artifacts" ./os-image/build.sh
+```
+
+Version pinning is tracked in-repo via:
+
+```bash
+os-image/vyos-1x-package.toml
+```
+
+Example:
+
+```toml
+[[packages]]
+name = "vyos-1x"
+commit_id = "124304285eef883069303773093ed76f6d593c16"
+scm_url = "https://github.com/vyos/vyos-1x.git"
 ```
 
 Generated outputs include:
 
-- `images/vyos-router/artifacts/**/*.iso`
-- `images/vyos-router/artifacts/**/*.qcow2`
-- `images/vyos-router/artifacts/**/*.log`
-- `images/vyos-router/artifacts/SHA256SUMS`
+- `os-image/artifacts/**/*.iso`
+- `os-image/artifacts/**/*.qcow2`
+- `os-image/artifacts/**/*.log`
+- `os-image/artifacts/SHA256SUMS`
 
 ## Commit and PR Title Convention
 
