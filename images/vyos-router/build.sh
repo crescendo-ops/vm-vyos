@@ -7,7 +7,7 @@ FLAVOR_FILE="${SCRIPT_DIR}/custom-flavor.toml"
 DOCKER_IMAGE="${DOCKER_IMAGE:-vyos/vyos-build:current}"
 TMPFS_SIZE="${TMPFS_SIZE:-10g}"
 BUILD_BY="${BUILD_BY:-quentin-roche}"
-VYOS_GIT_REF="${VYOS_GIT_REF:-}"
+VYOS_BUILD_GIT_REF="${VYOS_BUILD_GIT_REF:-}"
 OUT_DIR="${OUT_DIR:-$PWD/out}"
 
 mkdir -p "${OUT_DIR}"
@@ -18,16 +18,16 @@ docker run --rm -i --privileged \
   -v "${OUT_DIR}:/out" \
   -v "${FLAVOR_FILE}:/custom-flavor.toml:ro" \
   "${DOCKER_IMAGE}" \
-  bash -s -- "${BUILD_BY}" "${VYOS_GIT_REF}" <<'CONTAINER_SCRIPT'
+  bash -s -- "${BUILD_BY}" "${VYOS_BUILD_GIT_REF}" <<'CONTAINER_SCRIPT'
 set -euo pipefail
 
 BUILD_BY="$1"
-VYOS_GIT_REF="$2"
+VYOS_BUILD_GIT_REF="$2"
 
 cd /work
 
-if [ -n "${VYOS_GIT_REF}" ]; then
-  git clone --depth 1 --branch "${VYOS_GIT_REF}" https://github.com/vyos/vyos-build .
+if [ -n "${VYOS_BUILD_GIT_REF}" ]; then
+  git clone --depth 1 --branch "${VYOS_BUILD_GIT_REF}" https://github.com/vyos/vyos-build .
 else
   git clone https://github.com/vyos/vyos-build .
 fi
