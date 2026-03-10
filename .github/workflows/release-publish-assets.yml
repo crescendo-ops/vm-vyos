@@ -58,7 +58,9 @@ jobs:
           set -euo pipefail
 
           artifacts_dir="os-image/artifacts"
+          release_assets_dir="${RUNNER_TEMP}/release-assets"
           release_version="$(printf '%s' "${TAG_NAME#v}" | tr -c 'A-Za-z0-9._-' '-')"
+          mkdir -p "${release_assets_dir}"
 
           qcow2_src="$(find "${artifacts_dir}" -type f -name 'vyos-*.qcow2' | sort | head -n 1)"
 
@@ -67,8 +69,8 @@ jobs:
             exit 1
           fi
 
-          qcow2_out="${artifacts_dir}/vyos-${release_version}-custom-flavor-amd64.qcow2"
-          mv "${qcow2_src}" "${qcow2_out}"
+          qcow2_out="${release_assets_dir}/vyos-${release_version}-custom-flavor-amd64.qcow2"
+          cp "${qcow2_src}" "${qcow2_out}"
 
           {
             echo "files<<EOF"
