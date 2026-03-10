@@ -5,9 +5,10 @@
 .idea/
 .vscode/
 
-# Nix
-result
-result-*
+# images
+*.qcow2
+*.img
+*.iso
 
 # direnv
 .direnv/
