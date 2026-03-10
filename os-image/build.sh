@@ -4,8 +4,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 FLAVOR_FILE="${SCRIPT_DIR}/custom-flavor.toml"
-VYOS_1X_PACKAGE_FILE="${SCRIPT_DIR}/vyos-1x-package.toml"
-DEFAULT_CONFIG_FILE="${DEFAULT_CONFIG_FILE:-${REPO_ROOT}/vyos-config.boot}"
+VYOS_1X_PACKAGE_FILE="${REPO_ROOT}/config/vyos-1x-package.toml"
+DEFAULT_CONFIG_FILE="${DEFAULT_CONFIG_FILE:-${REPO_ROOT}/config/vyos-config.boot}"
 
 OUT_DIR="${OUT_DIR:-$PWD/out}"
 

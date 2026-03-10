@@ -1,0 +1,135 @@
+---
+- name: Redeploy VyOS VM on libvirt with ZFS ZVOL
+  hosts: all
+  gather_facts: false
+  become: false
+  vars:
+    vm_name: vyos-router
+    zvol_dataset: zroot/vm-disks/vyos-router/disk
+    zvol_size: 20G
+    zvol_device: /dev/zvol/zroot/vm-disks/vyos-router/disk
+    local_domain_xml_path: "{{ playbook_dir }}/../config/vm-domain.xml"
+    remote_domain_xml_path: /tmp/vm-domain.xml
+    local_qcow2_path: "{{ playbook_dir }}/../vyos-beta-v0.0.1-5-custom-flavor-amd64.qcow2"
+    remote_qcow2_path: /var/lib/libvirt/images/vyos-router.qcow2
+
+  tasks:
+    - name: Ensure local domain XML exists on control machine (Mac)
+      ansible.builtin.stat:
+        path: "{{ local_domain_xml_path }}"
+      delegate_to: localhost
+      become: false
+      register: local_domain_xml_stat
+
+    - name: Fail when local domain XML is missing
+      ansible.builtin.fail:
+        msg: "Local XML file not found on control machine: {{ local_domain_xml_path }}"
+      when: not local_domain_xml_stat.stat.exists
+
+    - name: Ensure local qcow2 exists on control machine (Mac)
+      ansible.builtin.stat:
+        path: "{{ local_qcow2_path }}"
+      delegate_to: localhost
+      become: false
+      register: local_qcow2_stat
+
+    - name: Fail when local qcow2 is missing
+      ansible.builtin.fail:
+        msg: "Local qcow2 file not found on control machine: {{ local_qcow2_path }}"
+      when: not local_qcow2_stat.stat.exists
+
+    - name: Ensure remote directory for domain XML exists
+      ansible.builtin.file:
+        path: "{{ remote_domain_xml_path | dirname }}"
+        state: directory
+        mode: "0755"
+
+    - name: Ensure remote directory for qcow2 exists
+      ansible.builtin.file:
+        path: "{{ remote_qcow2_path | dirname }}"
+        state: directory
+        mode: "0755"
+
+    - name: Copy domain XML from control machine to libvirt host
+      ansible.builtin.copy:
+        src: "{{ local_domain_xml_path }}"
+        dest: "{{ remote_domain_xml_path }}"
+        mode: "0644"
+
+    - name: Copy qcow2 from control machine to libvirt host
+      ansible.builtin.copy:
+        src: "{{ local_qcow2_path }}"
+        dest: "{{ remote_qcow2_path }}"
+        mode: "0644"
+
+    - name: Ensure required host commands are installed
+      ansible.builtin.command: "bash -lc 'command -v {{ item }}'"
+      loop:
+        - zfs
+        - virsh
+        - qemu-img
+      changed_when: false
+
+    - name: Check whether libvirt domain exists before replacement
+      ansible.builtin.command: "virsh dominfo {{ vm_name }}"
+      register: vm_dominfo_before
+      changed_when: false
+      failed_when: false
+
+    - name: Check VM run state before replacement
+      ansible.builtin.command: "virsh domstate {{ vm_name }}"
+      register: vm_state_before
+      changed_when: false
+      failed_when: false
+      when: vm_dominfo_before.rc == 0
+
+    - name: Stop existing VM before replacement
+      ansible.builtin.command: "virsh destroy {{ vm_name }}"
+      when:
+        - vm_dominfo_before.rc == 0
+        - (vm_state_before.stdout | default('') | trim) != "shut off"
+      changed_when: true
+
+    - name: Undefine existing VM before replacement
+      ansible.builtin.command: "virsh undefine {{ vm_name }}"
+      when:
+        - vm_dominfo_before.rc == 0
+      changed_when: true
+
+    - name: Check whether ZVOL exists before replacement
+      ansible.builtin.command: "zfs list -H -o name {{ zvol_dataset }}"
+      register: zvol_before
+      changed_when: false
+      failed_when: false
+
+    - name: Destroy existing ZVOL before replacement
+      ansible.builtin.command: "zfs destroy -R {{ zvol_dataset }}"
+      when:
+        - zvol_before.rc == 0
+      changed_when: true
+
+    - name: Create new ZVOL
+      ansible.builtin.command: "zfs create -V {{ zvol_size }} -o volmode=dev {{ zvol_dataset }}"
+      changed_when: true
+
+    - name: Wait for ZVOL block device
+      ansible.builtin.wait_for:
+        path: "{{ zvol_device }}"
+        state: present
+        timeout: 20
+
+    - name: Import qcow2 into ZVOL
+      ansible.builtin.command: "qemu-img convert -p -f qcow2 -O raw {{ remote_qcow2_path }} {{ zvol_device }}"
+      changed_when: true
+
+    - name: Define VM from domain XML
+      ansible.builtin.command: "virsh define {{ remote_domain_xml_path }}"
+      changed_when: true
+
+    - name: Enable VM autostart
+      ansible.builtin.command: "virsh autostart {{ vm_name }}"
+      changed_when: true
+
+    - name: Start VM
+      ansible.builtin.command: "virsh start {{ vm_name }}"
+      changed_when: true

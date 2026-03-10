@@ -6,8 +6,8 @@ Build automation and Terraform for the VyOS router image and VM.
 
 - `os-image/build.sh`: builds VyOS artifacts (`.iso`, `.qcow2`, `.log`, `SHA256SUMS`)
 - `os-image/custom-flavor.toml`: VyOS flavor definition used by the build script
-- `os-image/vyos-1x-package.toml`: pinned `vyos-1x` package source/version used by builds
-- `vyos-config.boot`: VyOS config baked into image builds
+- `config/vyos-1x-package.toml`: pinned `vyos-1x` package source/version used by builds
+- `config/vyos-config.boot`: VyOS config baked into image builds
 - `terraform/vyos-router`: VM provisioning files
 - `scripts/validate-commit-history.sh`: validates scoped conventional commit subjects
 
@@ -19,13 +19,13 @@ From repository root:
 OUT_DIR="$PWD/os-image/artifacts" ./os-image/build.sh
 ```
 
-The build script appends `vyos-config.boot` as `default_config` in the flavor before running `build-vyos-image`.
+The build script appends `config/vyos-config.boot` as `default_config` in the flavor before running `build-vyos-image`.
 Set `DEFAULT_CONFIG_FILE=/absolute/path/to/config.boot` to override the config source file.
 
 Version pinning is tracked in-repo via:
 
 ```bash
-os-image/vyos-1x-package.toml
+config/vyos-1x-package.toml
 ```
 
 Example:
@@ -43,6 +43,32 @@ Generated outputs include:
 - `os-image/artifacts/**/*.qcow2`
 - `os-image/artifacts/**/*.log`
 - `os-image/artifacts/SHA256SUMS`
+
+## Deploy VyOS on libvirt with ZFS ZVOL
+
+Use the Ansible playbook:
+
+```bash
+ansible-playbook -i "192.168.1.124," -u root ansible/redeploy-vyos-vm.yml
+```
+
+Default hardcoded paths in the playbook:
+
+- ZVOL dataset: `zroot/vm-disks/vyos-router/disk`
+- ZVOL device: `/dev/zvol/zroot/vm-disks/vyos-router/disk`
+- Local XML on your Mac: `config/vm-domain.xml`
+- Remote XML on libvirt host: `/tmp/vm-domain.xml`
+- Local qcow2 on your Mac: `vyos-beta-v0.0.1-5-custom-flavor-amd64.qcow2`
+- Remote qcow2 on libvirt host: `/var/lib/libvirt/images/vyos-router.qcow2`
+
+Behavior:
+
+- Always replaces existing VM + ZVOL with a brand new instance.
+- Copies the XML from your Mac to the libvirt host.
+- Copies the qcow2 from your Mac to the libvirt host.
+- Imports the `qcow2` image into the newly created ZVOL.
+- Defines the VM from the copied XML.
+- Enables autostart and starts the VM.
 
 ## Commit and PR Title Convention
 

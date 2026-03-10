@@ -36,4 +36,4 @@ jobs:
           title: "deps(vyos): 🤖 bump vyos-1x to ${{ steps.prepare.outputs.new_sha_short }}"
           body-path: /tmp/vyos-upgrade-pr.md
           add-paths: |
-            os-image/vyos-1x-package.toml
+            config/vyos-1x-package.toml

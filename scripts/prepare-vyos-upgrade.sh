@@ -13,7 +13,7 @@ Options:
 USAGE
 }
 
-package_file="os-image/vyos-1x-package.toml"
+package_file="config/vyos-1x-package.toml"
 body_file="/tmp/vyos-upgrade-pr.md"
 upstream_repo="vyos/vyos-1x"
 dry_run="false"
